@@ -376,7 +376,7 @@ let zxingReader = null;
 let barcodeDetector = null;
 
 const lastSeen = new Map();
-const DEBOUNCE = 2000;
+const DEBOUNCE = 1200;
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(t => {
@@ -552,6 +552,8 @@ async function tickScan() {
 }
 
 // ── Check logic ────────────────────────────────────────────────────────────
+let resultResetTimer = null;
+
 function processCode(code) {
   code = code.trim();
   if (!code) return;
@@ -559,14 +561,12 @@ function processCode(code) {
   document.getElementById('result-flash').classList.remove('flash-found','flash-miss');
 
   if (orders.has(code)) {
-    // ✅ In imported list → mark found
     orders.set(code, 'found');
     showResult('✅', code, '在列表中 ✓', 'flash-found');
     addLog('✅', code, 'found');
     vibrate([80, 40, 80]);
     renderOrderList();
   } else {
-    // ❌ NOT in list → only add to missLog, NEVER touch orders
     missLog.add(code);
     showResult('❌', code, '不在列表中 ✗', 'flash-miss');
     addLog('❌', code, 'miss');
@@ -574,6 +574,12 @@ function processCode(code) {
   }
 
   updateStats();
+
+  // Auto-reset result area after 1.5s so user knows scanner is ready for next item
+  if (resultResetTimer) clearTimeout(resultResetTimer);
+  resultResetTimer = setTimeout(() => {
+    if (scanning) resetResult();
+  }, 1500);
 }
 
 function checkManual() {
