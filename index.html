@@ -4,250 +4,105 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>包裹扫码核验</title>
-<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<!-- ZXing browser library – BrowserMultiFormatReader handles continuous decode internally -->
+<script src="https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js"></script>
 <style>
-  :root {
-    --bg: #f5f7fa;
-    --surface: #ffffff;
-    --border: #e1e5ea;
-    --accent: #1a73e8;
-    --green: #1e8e3e;
-    --red: #d93025;
-    --text: #1f2328;
-    --muted: #6e7781;
-    --radius: 12px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    min-height: 100vh;
-    display: flex; flex-direction: column;
-  }
-  header {
-    padding: 14px 20px 11px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
-    background: var(--surface);
-  }
-  header .logo {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--accent), #bc8cff);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-  }
+:root {
+  --bg:#f5f7fa; --surface:#fff; --border:#e1e5ea;
+  --accent:#1a73e8; --green:#1e8e3e; --red:#d93025;
+  --text:#1f2328; --muted:#6e7781; --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'SF Mono','Fira Code',Consolas,monospace;min-height:100vh;display:flex;flex-direction:column}
+header{padding:14px 20px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface)}
+.logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#bc8cff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
 
-  .stats-bar {
-    display: grid; grid-template-columns: 1fr 1fr 1fr;
-    gap: 1px; background: var(--border);
-    border-bottom: 1px solid var(--border);
-  }
-  .stat { background: var(--surface); padding: 10px; text-align: center; }
-  .stat-num { font-size: 22px; font-weight: 700; line-height: 1; }
-  .stat-num.total { color: var(--accent); }
-  .stat-num.found { color: var(--green); }
-  .stat-num.miss  { color: var(--red); }
-  .stat-label { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: .08em; text-transform: uppercase; }
+.stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.stat{background:var(--surface);padding:10px;text-align:center}
+.stat-num{font-size:22px;font-weight:700;line-height:1}
+.stat-num.total{color:var(--accent)}.stat-num.found{color:var(--green)}.stat-num.miss{color:var(--red)}
+.stat-label{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.08em;text-transform:uppercase}
 
-  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .tab {
-    flex: 1; padding: 12px 8px; text-align: center;
-    font-size: 12px; font-weight: 600; letter-spacing: .06em;
-    color: var(--muted); cursor: pointer;
-    border-bottom: 2px solid transparent; transition: all .2s; user-select: none;
-  }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:12px 8px;text-align:center;font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{display:none;flex:1;flex-direction:column;overflow:hidden}
+.panel.active{display:flex}
 
-  .panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
-  .panel.active { display: flex; }
+/* IMPORT */
+.import-panel{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.import-panel label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;display:block}
+textarea{width:100%;min-height:140px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px;padding:12px;resize:vertical;outline:none;line-height:1.6;transition:border-color .2s}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--muted)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border-radius:var(--radius);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s,transform .1s;letter-spacing:.04em;user-select:none}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff;width:100%}
+.btn-export{background:var(--green);color:#fff;width:100%}
+.btn-danger{background:transparent;color:var(--red);border:1px solid var(--red);width:100%}
+.order-list{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;max-height:260px;overflow-y:auto}
+.order-item{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.order-item:last-child{border-bottom:none}
+.badge{font-size:10px;padding:2px 7px;border-radius:100px;font-weight:700;letter-spacing:.04em;flex-shrink:0;margin-left:8px}
+.badge-pending{background:rgba(110,119,129,.12);color:var(--muted)}
+.badge-found{background:rgba(30,142,62,.12);color:var(--green)}
 
-  /* IMPORT */
-  .import-panel {
-    flex: 1; overflow-y: auto; padding: 16px;
-    display: flex; flex-direction: column; gap: 12px;
-  }
-  .import-panel label {
-    font-size: 11px; color: var(--muted);
-    letter-spacing: .08em; text-transform: uppercase;
-    margin-bottom: 4px; display: block;
-  }
-  textarea {
-    width: 100%; min-height: 140px;
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: var(--radius); color: var(--text);
-    font-family: inherit; font-size: 13px; padding: 12px;
-    resize: vertical; outline: none; line-height: 1.6;
-    transition: border-color .2s;
-  }
-  textarea:focus { border-color: var(--accent); }
-  textarea::placeholder { color: var(--muted); }
+/* SCAN */
+.camera-wrap{position:relative;background:#000;overflow:hidden;flex-shrink:0}
+#video{width:100%;display:block;max-height:260px;object-fit:cover}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:200px;height:200px;position:relative}
+.scan-frame::before,.scan-frame::after,.scan-frame>span::before,.scan-frame>span::after{content:'';position:absolute;width:26px;height:26px;border-color:#fff;border-style:solid}
+.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px}
+.scan-frame::after{top:0;right:0;border-width:3px 3px 0 0}
+.scan-frame>span::before{bottom:0;left:0;border-width:0 0 3px 3px}
+.scan-frame>span::after{bottom:0;right:0;border-width:0 3px 3px 0}
+.scan-line{position:absolute;left:8px;right:8px;height:2px;background:linear-gradient(90deg,transparent,#fff,transparent);animation:scanline 2s ease-in-out infinite;top:50%}
+@keyframes scanline{0%{transform:translateY(-90px);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(90px);opacity:0}}
+.cam-status-badge{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);padding:4px 14px;border-radius:100px;font-size:11px;color:#fff;backdrop-filter:blur(4px);white-space:nowrap}
 
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    gap: 6px; padding: 11px 20px; border-radius: var(--radius);
-    font-family: inherit; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: none;
-    transition: opacity .15s, transform .1s;
-    letter-spacing: .04em; user-select: none;
-  }
-  .btn:active { transform: scale(.97); }
-  .btn-primary { background: var(--accent); color: #fff; width: 100%; }
-  .btn-export  { background: #1e8e3e; color: #fff; width: 100%; }
-  .btn-danger  { background: transparent; color: var(--red); border: 1px solid var(--red); width: 100%; }
+.scan-controls{padding:10px 16px;display:flex;gap:8px;border-bottom:1px solid var(--border);background:var(--surface)}
+.btn-scan{flex:1;background:var(--green);color:#fff}
+.btn-stop{flex:1;background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn-exp-sm{flex:0 0 auto;background:var(--accent);color:#fff;font-size:12px;padding:9px 14px}
 
-  .order-list {
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-    max-height: 260px; overflow-y: auto;
-  }
-  .order-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 9px 14px; border-bottom: 1px solid var(--border); font-size: 13px;
-  }
-  .order-item:last-child { border-bottom: none; }
-  .badge {
-    font-size: 10px; padding: 2px 7px; border-radius: 100px;
-    font-weight: 700; letter-spacing: .04em; flex-shrink: 0; margin-left: 8px;
-  }
-  .badge-pending { background: rgba(110,119,129,.12); color: var(--muted); }
-  .badge-found   { background: rgba(30,142,62,.12);   color: var(--green); }
+.result-flash{padding:13px 16px;display:flex;align-items:center;gap:12px;background:var(--surface);border-bottom:1px solid var(--border);min-height:66px;transition:background .2s}
+.result-flash.flash-found{background:rgba(30,142,62,.1)}
+.result-flash.flash-miss{background:rgba(217,48,37,.1)}
+.result-icon{font-size:26px;flex-shrink:0;line-height:1}
+.result-code{font-size:14px;font-weight:700;word-break:break-all}
+.result-msg{font-size:12px;color:var(--muted);margin-top:2px}
 
-  /* SCAN */
-  .camera-wrap { position: relative; background: #000; overflow: hidden; flex-shrink: 0; }
-  #video { width: 100%; display: block; max-height: 260px; object-fit: cover; }
-  .scan-overlay {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    pointer-events: none;
-  }
-  .scan-frame { width: 190px; height: 190px; position: relative; }
-  .scan-frame::before,.scan-frame::after,
-  .scan-frame > span::before,.scan-frame > span::after {
-    content: ''; position: absolute; width: 26px; height: 26px;
-    border-color: #fff; border-style: solid;
-  }
-  .scan-frame::before  { top:0;    left:0;  border-width: 3px 0 0 3px; }
-  .scan-frame::after   { top:0;    right:0; border-width: 3px 3px 0 0; }
-  .scan-frame > span::before { bottom:0; left:0;  border-width: 0 0 3px 3px; }
-  .scan-frame > span::after  { bottom:0; right:0; border-width: 0 3px 3px 0; }
-  .scan-line {
-    position: absolute; left: 8px; right: 8px; height: 2px;
-    background: linear-gradient(90deg, transparent, #fff, transparent);
-    animation: scanline 2s ease-in-out infinite; top: 50%;
-  }
-  @keyframes scanline {
-    0%   { transform: translateY(-85px); opacity: 0; }
-    10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { transform: translateY(85px);  opacity: 0; }
-  }
-  .camera-status {
-    position: absolute; bottom: 8px; left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,.55); padding: 4px 12px;
-    border-radius: 100px; font-size: 11px; color: #fff;
-    backdrop-filter: blur(4px); white-space: nowrap;
-  }
+.manual-row{display:flex;gap:8px;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.manual-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 12px;outline:none}
+.manual-input:focus{border-color:var(--accent)}
+.btn-manual{background:var(--accent);color:#fff;padding:9px 16px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;border:none;cursor:pointer;flex-shrink:0}
 
-  .scan-controls {
-    padding: 10px 16px; display: flex; gap: 8px;
-    border-bottom: 1px solid var(--border); background: var(--surface);
-  }
-  .btn-scan { flex: 1; background: var(--green); color: #fff; }
-  .btn-stop { flex: 1; background: transparent; color: var(--red); border: 1px solid var(--red); }
-  .btn-exp-sm { flex: 0.6; background: #1a73e8; color: #fff; font-size: 12px; padding: 9px 10px; }
+.scan-log{flex:1;overflow-y:auto;padding:8px 16px}
+.log-title{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.log-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(225,229,234,.8);font-size:12px}
+.log-icon{font-size:14px;flex-shrink:0}
+.log-code{flex:1;word-break:break-all}
+.log-time{color:var(--muted);font-size:11px;flex-shrink:0}
+.empty-hint{text-align:center;color:var(--muted);font-size:12px;padding:24px 0}
 
-  .result-flash {
-    padding: 13px 16px; display: flex; align-items: center; gap: 12px;
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    min-height: 66px; transition: background .25s;
-  }
-  .result-flash.flash-found { background: rgba(30,142,62,.1); }
-  .result-flash.flash-miss  { background: rgba(217,48,37,.1); }
-  .result-icon { font-size: 26px; flex-shrink: 0; line-height: 1; }
-  .result-code { font-size: 14px; font-weight: 700; word-break: break-all; }
-  .result-msg  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+/* EXPORT MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:20px 20px 36px;display:flex;flex-direction:column;gap:12px;animation:slideUp .25s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-title{font-size:15px;font-weight:700}
+.modal-section{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.export-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;max-height:110px;overflow-y:auto;line-height:2;white-space:pre-wrap;word-break:break-all;color:var(--text)}
+.export-box .hit{color:var(--green);display:block}
+.export-box .nope{color:var(--red);display:block}
+.modal-btns{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.btn-copy{flex:1;background:var(--accent);color:#fff;min-width:80px}
+.btn-csv{flex:1;background:#f5f7fa;color:var(--text);border:1px solid var(--border);min-width:80px}
+.btn-close-m{flex:1;background:transparent;color:var(--muted);border:1px solid var(--border);min-width:80px}
 
-  .manual-row {
-    display: flex; gap: 8px; padding: 10px 16px;
-    background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0;
-  }
-  .manual-input {
-    flex: 1; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); font-family: inherit;
-    font-size: 13px; padding: 9px 12px; outline: none;
-  }
-  .manual-input:focus { border-color: var(--accent); }
-  .btn-manual {
-    background: var(--accent); color: #fff; padding: 9px 16px;
-    border-radius: 8px; font-family: inherit; font-size: 13px;
-    font-weight: 600; border: none; cursor: pointer; flex-shrink: 0;
-  }
-
-  .scan-log { flex: 1; overflow-y: auto; padding: 8px 16px; }
-  .log-title {
-    font-size: 10px; color: var(--muted); letter-spacing: .1em;
-    text-transform: uppercase; padding: 8px 0 6px;
-    border-bottom: 1px solid var(--border); margin-bottom: 6px;
-  }
-  .log-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 7px 0; border-bottom: 1px solid rgba(225,229,234,.8); font-size: 12px;
-  }
-  .log-icon { font-size: 14px; flex-shrink: 0; }
-  .log-code { flex: 1; word-break: break-all; }
-  .log-time { color: var(--muted); font-size: 11px; flex-shrink: 0; }
-  .empty-hint { text-align: center; color: var(--muted); font-size: 12px; padding: 24px 0; }
-
-  /* EXPORT MODAL */
-  .modal-bg {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.4); z-index: 100;
-    align-items: flex-end; justify-content: center;
-  }
-  .modal-bg.open { display: flex; }
-  .modal {
-    background: var(--surface); width: 100%; max-width: 520px;
-    border-radius: 16px 16px 0 0;
-    padding: 20px 20px 36px;
-    display: flex; flex-direction: column; gap: 12px;
-    animation: slideUp .25s cubic-bezier(.34,1.56,.64,1);
-    max-height: 90vh; overflow-y: auto;
-  }
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to   { transform: translateY(0); }
-  }
-  .modal-title { font-size: 15px; font-weight: 700; }
-  .modal-section {
-    font-size: 11px; color: var(--muted); letter-spacing: .08em;
-    text-transform: uppercase; margin-bottom: 4px;
-  }
-  .export-box {
-    background: var(--bg); border: 1px solid var(--border);
-    border-radius: 10px; padding: 12px; font-size: 12px;
-    max-height: 110px; overflow-y: auto; line-height: 2;
-    white-space: pre-wrap; word-break: break-all; color: var(--text);
-  }
-  .export-box .hit  { color: var(--green); display: block; }
-  .export-box .nope { color: var(--red);   display: block; }
-  .modal-btns { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
-  .btn-copy  { flex: 1; background: var(--accent); color: #fff; min-width: 80px; }
-  .btn-csv   { flex: 1; background: #f5f7fa; color: var(--text); border: 1px solid var(--border); min-width: 80px; }
-  .btn-close-m { flex: 1; background: transparent; color: var(--muted); border: 1px solid var(--border); min-width: 80px; }
-
-  #toast {
-    position: fixed; bottom: 24px; left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: var(--surface); border: 1px solid var(--border);
-    padding: 10px 20px; border-radius: 100px;
-    font-size: 13px; z-index: 999;
-    transition: transform .3s cubic-bezier(.34,1.56,.64,1);
-    white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.15);
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); }
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:100px;font-size:13px;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+#toast.show{transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -255,24 +110,15 @@
 <header>
   <div class="logo">📦</div>
   <div>
-    <div style="font-size:15px;font-weight:700;">包裹扫码核验</div>
-    <div style="font-size:11px;color:var(--muted);">PACKAGE SCANNER</div>
+    <div style="font-size:15px;font-weight:700">包裹扫码核验</div>
+    <div style="font-size:11px;color:var(--muted)">PACKAGE SCANNER</div>
   </div>
 </header>
 
 <div class="stats-bar">
-  <div class="stat">
-    <div class="stat-num total" id="s-total">0</div>
-    <div class="stat-label">总单号</div>
-  </div>
-  <div class="stat">
-    <div class="stat-num found" id="s-found">0</div>
-    <div class="stat-label">已核验</div>
-  </div>
-  <div class="stat">
-    <div class="stat-num miss" id="s-miss">0</div>
-    <div class="stat-label">不在列表</div>
-  </div>
+  <div class="stat"><div class="stat-num total" id="s-total">0</div><div class="stat-label">总单号</div></div>
+  <div class="stat"><div class="stat-num found" id="s-found">0</div><div class="stat-label">已核验</div></div>
+  <div class="stat"><div class="stat-num miss"  id="s-miss">0</div><div class="stat-label">不在列表</div></div>
 </div>
 
 <div class="tabs">
@@ -280,7 +126,7 @@
   <div class="tab"        data-tab="scan">📷 扫码核验</div>
 </div>
 
-<!-- IMPORT PANEL -->
+<!-- IMPORT -->
 <div class="panel active" id="panel-import">
   <div class="import-panel">
     <div>
@@ -290,7 +136,6 @@
     <button class="btn btn-primary" onclick="importOrders()">✅ 导入单号</button>
     <button class="btn btn-export"  onclick="openExport()">📤 导出核验报告</button>
     <button class="btn btn-danger"  onclick="clearAll()">🗑 清空全部</button>
-
     <div id="order-list-wrap" style="display:none">
       <label id="list-label">单号列表</label>
       <div class="order-list" id="order-list"></div>
@@ -298,20 +143,19 @@
   </div>
 </div>
 
-<!-- SCAN PANEL -->
+<!-- SCAN -->
 <div class="panel" id="panel-scan">
   <div class="camera-wrap">
     <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas" style="display:none"></canvas>
     <div class="scan-overlay">
       <div class="scan-frame"><span></span><div class="scan-line"></div></div>
     </div>
-    <div class="camera-status" id="cam-status">摄像头未启动</div>
+    <div class="cam-status-badge" id="cam-status">摄像头未启动</div>
   </div>
 
   <div class="scan-controls">
-    <button class="btn btn-scan"   id="btn-start" onclick="startCamera()">▶ 开始扫描</button>
-    <button class="btn btn-stop"   id="btn-stop"  onclick="stopCamera()" style="display:none">⏹ 停止</button>
+    <button class="btn btn-scan"   id="btn-start" onclick="startScan()">▶ 开始扫描</button>
+    <button class="btn btn-stop"   id="btn-stop"  onclick="stopScan()" style="display:none">⏹ 停止</button>
     <button class="btn btn-exp-sm" onclick="openExport()">📤 导出</button>
   </div>
 
@@ -319,7 +163,7 @@
     <div class="result-icon" id="r-icon">⬜</div>
     <div>
       <div class="result-code" id="r-code" style="color:var(--muted)">等待扫描...</div>
-      <div class="result-msg"  id="r-msg">将二维码/条形码对准扫描框</div>
+      <div class="result-msg"  id="r-msg">将条形码/二维码对准扫描框</div>
     </div>
   </div>
 
@@ -338,7 +182,6 @@
 <div class="modal-bg" id="modal-bg" onclick="closeExportIfBg(event)">
   <div class="modal">
     <div class="modal-title">📤 核验报告</div>
-
     <div>
       <div class="modal-section">✅ 在列表中已扫到 (<span id="exp-found-count">0</span> 个)</div>
       <div class="export-box" id="exp-found"><span style="color:var(--muted)">（无）</span></div>
@@ -351,7 +194,6 @@
       <div class="modal-section">❌ 扫到但不在列表 (<span id="exp-miss-count">0</span> 个)</div>
       <div class="export-box" id="exp-miss"><span style="color:var(--muted)">（无）</span></div>
     </div>
-
     <div class="modal-btns">
       <button class="btn btn-copy"    onclick="copyReport()">📋 复制文本</button>
       <button class="btn btn-csv"     onclick="downloadCSV()">💾 下载 CSV</button>
@@ -363,22 +205,25 @@
 <div id="toast"></div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────
-// orders   : Map<code, 'pending'|'found'>  ← only codes from imported list
-// missLog  : Set<code>                     ← scanned but NOT in list (never added to orders)
-const orders = new Map();
-const missLog = new Set();
+// ─────────────────────────────────────────────
+//  State
+// ─────────────────────────────────────────────
+const orders = new Map();   // code → 'pending' | 'found'   (imported list only)
+const missLog = new Set();  // scanned but NOT in list
 
-let scanning    = false;
-let stream      = null;
-let animFrame   = null;
-let zxingReader = null;
-let barcodeDetector = null;
+let codeReader = null;      // ZXing BrowserMultiFormatReader instance
+let scanActive = false;
 
+// Debounce: same code must wait this long before triggering again
+const DEBOUNCE_MS = 1500;
 const lastSeen = new Map();
-const DEBOUNCE = 1200;
 
-// ── Tabs ───────────────────────────────────────────────────────────────────
+// Auto-reset result display timer
+let resetTimer = null;
+
+// ─────────────────────────────────────────────
+//  Tabs
+// ─────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(t => {
   t.addEventListener('click', () => {
     document.querySelectorAll('.tab,.panel').forEach(e => e.classList.remove('active'));
@@ -387,62 +232,22 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 });
 
-// ── ZXing init (1D + 2D: Code128, Code39, EAN, QR, DataMatrix…) ───────────
-function initZxing() {
-  try {
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
-      ZXing.BarcodeFormat.CODE_128,
-      ZXing.BarcodeFormat.CODE_39,
-      ZXing.BarcodeFormat.CODE_93,
-      ZXing.BarcodeFormat.EAN_13,
-      ZXing.BarcodeFormat.EAN_8,
-      ZXing.BarcodeFormat.UPC_A,
-      ZXing.BarcodeFormat.UPC_E,
-      ZXing.BarcodeFormat.ITF,
-      ZXing.BarcodeFormat.CODABAR,
-      ZXing.BarcodeFormat.QR_CODE,
-      ZXing.BarcodeFormat.DATA_MATRIX,
-      ZXing.BarcodeFormat.PDF_417,
-      ZXing.BarcodeFormat.AZTEC,
-    ]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    zxingReader = new ZXing.MultiFormatReader();
-    zxingReader.setHints(hints);
-  } catch(e) { console.warn('ZXing init failed', e); }
-}
-
-// ── Native BarcodeDetector (pass canvas, not video element) ───────────────
-(async () => {
-  if ('BarcodeDetector' in window) {
-    try {
-      const fmts = await BarcodeDetector.getSupportedFormats();
-      barcodeDetector = new BarcodeDetector({ formats: fmts });
-    } catch(e) {}
-  }
-})();
-
-// ── Import ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  Import
+// ─────────────────────────────────────────────
 function importOrders() {
   const raw = document.getElementById('raw-input').value.trim();
   if (!raw) { toast('请先输入单号'); return; }
-
-  const lines = raw.split(/[\n\r,，；;]+/)
-    .map(s => s.trim()).filter(s => s.length > 0);
-
+  const lines = raw.split(/[\n\r,，；;]+/).map(s => s.trim()).filter(Boolean);
   let added = 0;
-  lines.forEach(code => {
-    if (!orders.has(code)) { orders.set(code, 'pending'); added++; }
-  });
-
-  renderOrderList();
-  updateStats();
+  lines.forEach(code => { if (!orders.has(code)) { orders.set(code, 'pending'); added++; } });
+  renderOrderList(); updateStats();
   toast(`✅ 已导入 ${added} 个单号（共 ${orders.size} 个）`);
   document.getElementById('raw-input').value = '';
 }
 
 function clearAll() {
-  if (orders.size === 0 && missLog.size === 0) { toast('列表已为空'); return; }
+  if (!orders.size && !missLog.size) { toast('列表已为空'); return; }
   if (!confirm('确认清空全部单号和扫描记录？')) return;
   orders.clear(); missLog.clear(); lastSeen.clear();
   document.getElementById('log-body').innerHTML = '<div class="empty-hint">暂无扫描记录</div>';
@@ -452,180 +257,151 @@ function clearAll() {
 
 function renderOrderList() {
   const wrap = document.getElementById('order-list-wrap');
-  const list = document.getElementById('order-list');
-  if (orders.size === 0) { wrap.style.display = 'none'; return; }
+  if (!orders.size) { wrap.style.display = 'none'; return; }
   wrap.style.display = '';
   document.getElementById('list-label').textContent = `单号列表（${orders.size} 个）`;
-  list.innerHTML = [...orders.entries()].map(([code, status]) => `
+  document.getElementById('order-list').innerHTML = [...orders.entries()].map(([code, st]) => `
     <div class="order-item">
       <span style="word-break:break-all;font-size:13px">${esc(code)}</span>
-      <span class="badge badge-${status}">${status === 'found' ? '✓ 已扫' : '待扫'}</span>
+      <span class="badge badge-${st}">${st === 'found' ? '✓ 已扫' : '待扫'}</span>
     </div>`).join('');
 }
 
-// ── Camera ─────────────────────────────────────────────────────────────────
-async function startCamera() {
+// ─────────────────────────────────────────────
+//  Scanner  –  uses BrowserMultiFormatReader
+//  which calls the callback on EVERY decoded
+//  frame continuously, no manual loop needed.
+// ─────────────────────────────────────────────
+async function startScan() {
   if (orders.size === 0) { toast('请先在「导入单号」中添加单号'); return; }
-  initZxing();
+  if (scanActive) return;
+
+  // ZXing @zxing/browser exposes ZXingBrowser global
+  const ZB = window.ZXingBrowser || window.ZXing;
+  if (!ZB || !ZB.BrowserMultiFormatReader) {
+    toast('扫码库加载失败，请检查网络后刷新');
+    return;
+  }
+
+  codeReader = new ZB.BrowserMultiFormatReader();
+
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: 'environment' },
-        width:  { ideal: 1280 },
-        height: { ideal: 720 }
+    // Get back camera
+    const devices = await ZB.BrowserMultiFormatReader.listVideoInputDevices();
+    // Prefer back camera (environment)
+    const device = devices.find(d =>
+      /back|rear|environment/i.test(d.label)
+    ) || devices[devices.length - 1] || null;
+
+    const videoEl = document.getElementById('video');
+
+    // decodeFromVideoDevice fires callback on every successful decode
+    await codeReader.decodeFromVideoDevice(
+      device ? device.deviceId : undefined,
+      videoEl,
+      (result, err) => {
+        if (!result) return;           // err = NotFoundException on every empty frame, safe to ignore
+        const code = result.getText().trim();
+        if (!code) return;
+
+        const now = Date.now();
+        if (lastSeen.has(code) && now - lastSeen.get(code) < DEBOUNCE_MS) return;
+        lastSeen.set(code, now);
+
+        processCode(code);
       }
-    });
-    const video = document.getElementById('video');
-    video.srcObject = stream;
-    await video.play();
-    scanning = true;
+    );
+
+    scanActive = true;
     document.getElementById('btn-start').style.display = 'none';
-    document.getElementById('btn-stop').style.display = '';
-    document.getElementById('cam-status').textContent = '扫描中…';
-    tickScan();
+    document.getElementById('btn-stop').style.display  = '';
+    document.getElementById('cam-status').textContent  = '扫描中…';
+
   } catch(e) {
-    toast('摄像头权限被拒绝，请在浏览器设置中允许');
     console.error(e);
+    toast('摄像头启动失败：' + (e.message || e));
+    codeReader = null;
   }
 }
 
-function stopCamera() {
-  scanning = false;
-  if (animFrame) { clearTimeout(animFrame); animFrame = null; }
-  if (stream)    { stream.getTracks().forEach(t => t.stop()); stream = null; }
+function stopScan() {
+  if (codeReader) {
+    try { codeReader.reset(); } catch(e) {}
+    codeReader = null;
+  }
+  scanActive = false;
   document.getElementById('btn-start').style.display = '';
   document.getElementById('btn-stop').style.display  = 'none';
   document.getElementById('cam-status').textContent  = '摄像头已停止';
 }
 
-// ── Scan loop ──────────────────────────────────────────────────────────────
-// 1) ZXing MultiFormatReader  → supports Code128, Code39, EAN, QR, etc.
-// 2) Native BarcodeDetector   → extra safety net (pass canvas ImageBitmap)
-async function tickScan() {
-  if (!scanning) return;
-
-  const video  = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
-  let detected = null;
-
-  if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-    // Draw current frame onto canvas
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.drawImage(video, 0, 0);
-
-    // 1) ZXing (primary – handles 1D + 2D)
-    if (zxingReader && !detected) {
-      try {
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const lum = new ZXing.RGBLuminanceSource(imgData.data, canvas.width, canvas.height);
-        const bin = new ZXing.HybridBinarizer(lum);
-        const bmp = new ZXing.BinaryBitmap(bin);
-        const result = zxingReader.decode(bmp);
-        if (result) detected = result.getText();
-      } catch(e) { /* NotFoundException is normal when no code in frame */ }
-    }
-
-    // 2) Native BarcodeDetector on canvas (Android Chrome ≥ 83)
-    if (!detected && barcodeDetector) {
-      try {
-        const bitmap = await createImageBitmap(canvas);
-        const results = await barcodeDetector.detect(bitmap);
-        bitmap.close();
-        if (results.length > 0) detected = results[0].rawValue;
-      } catch(e) {}
-    }
-
-    if (detected) {
-      const code = detected.trim();
-      const now  = Date.now();
-      if (code && (!lastSeen.has(code) || now - lastSeen.get(code) > DEBOUNCE)) {
-        lastSeen.set(code, now);
-        processCode(code);
-      }
-    }
-  }
-
-  // Use setTimeout instead of rAF to avoid flooding async stack
-  animFrame = setTimeout(() => tickScan(), 150);
-}
-
-// ── Check logic ────────────────────────────────────────────────────────────
-let resultResetTimer = null;
-
+// ─────────────────────────────────────────────
+//  Process scanned code
+// ─────────────────────────────────────────────
 function processCode(code) {
-  code = code.trim();
-  if (!code) return;
-
-  document.getElementById('result-flash').classList.remove('flash-found','flash-miss');
-
   if (orders.has(code)) {
     orders.set(code, 'found');
     showResult('✅', code, '在列表中 ✓', 'flash-found');
-    addLog('✅', code, 'found');
+    addLog('✅', code, true);
     vibrate([80, 40, 80]);
     renderOrderList();
   } else {
     missLog.add(code);
     showResult('❌', code, '不在列表中 ✗', 'flash-miss');
-    addLog('❌', code, 'miss');
-    vibrate([350]);
+    addLog('❌', code, false);
+    vibrate([300]);
   }
-
   updateStats();
 
-  // Auto-reset result area after 1.5s so user knows scanner is ready for next item
-  if (resultResetTimer) clearTimeout(resultResetTimer);
-  resultResetTimer = setTimeout(() => {
-    if (scanning) resetResult();
-  }, 1500);
+  // Auto-reset after 1.5 s so UI shows "ready for next scan"
+  if (resetTimer) clearTimeout(resetTimer);
+  resetTimer = setTimeout(() => { if (scanActive) resetResult(); }, 1500);
 }
 
 function checkManual() {
-  const inp  = document.getElementById('manual-in');
+  const inp = document.getElementById('manual-in');
   const code = inp.value.trim();
   if (!code) return;
-  lastSeen.delete(code); // bypass debounce for manual
+  lastSeen.delete(code);
   processCode(code);
   inp.value = '';
   inp.focus();
 }
-
 document.getElementById('manual-in').addEventListener('keydown', e => {
   if (e.key === 'Enter') checkManual();
 });
 
-// ── UI ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  UI helpers
+// ─────────────────────────────────────────────
 function showResult(icon, code, msg, cls) {
   document.getElementById('r-icon').textContent = icon;
-  const codeEl = document.getElementById('r-code');
-  codeEl.textContent = code;
-  codeEl.style.color = cls === 'flash-found' ? 'var(--green)' : 'var(--red)';
-  document.getElementById('r-msg').textContent  = msg;
+  const el = document.getElementById('r-code');
+  el.textContent = code;
+  el.style.color = cls === 'flash-found' ? 'var(--green)' : 'var(--red)';
+  document.getElementById('r-msg').textContent = msg;
   document.getElementById('result-flash').className = 'result-flash ' + cls;
 }
 
 function resetResult() {
   document.getElementById('r-icon').textContent = '⬜';
-  const codeEl = document.getElementById('r-code');
-  codeEl.textContent = '等待扫描...';
-  codeEl.style.color = 'var(--muted)';
-  document.getElementById('r-msg').textContent = '将二维码/条形码对准扫描框';
+  const el = document.getElementById('r-code');
+  el.textContent = '等待扫描...';
+  el.style.color = 'var(--muted)';
+  document.getElementById('r-msg').textContent = '将条形码/二维码对准扫描框';
   document.getElementById('result-flash').className = 'result-flash';
 }
 
-function addLog(icon, code, type) {
+function addLog(icon, code, found) {
   const body = document.getElementById('log-body');
   if (body.querySelector('.empty-hint')) body.innerHTML = '';
   const now = new Date();
   const t = [now.getHours(), now.getMinutes(), now.getSeconds()]
-    .map(n => n.toString().padStart(2,'0')).join(':');
-  const color = type === 'found' ? 'var(--green)' : 'var(--red)';
-  const item  = document.createElement('div');
+    .map(n => String(n).padStart(2,'0')).join(':');
+  const item = document.createElement('div');
   item.className = 'log-item';
   item.innerHTML = `<span class="log-icon">${icon}</span>
-    <span class="log-code" style="color:${color}">${esc(code)}</span>
+    <span class="log-code" style="color:${found?'var(--green)':'var(--red)'}">${esc(code)}</span>
     <span class="log-time">${t}</span>`;
   body.insertBefore(item, body.firstChild);
 }
@@ -638,45 +414,36 @@ function updateStats() {
   document.getElementById('s-miss').textContent  = missLog.size;
 }
 
-// ── Export ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  Export
+// ─────────────────────────────────────────────
 function openExport() {
-  const foundList   = [...orders.entries()].filter(([,v]) => v==='found').map(([k]) => k);
-  const pendingList = [...orders.entries()].filter(([,v]) => v==='pending').map(([k]) => k);
+  const foundList   = [...orders.entries()].filter(([,v])=>v==='found').map(([k])=>k);
+  const pendingList = [...orders.entries()].filter(([,v])=>v==='pending').map(([k])=>k);
   const missList    = [...missLog];
-
-  const fill = (boxId, countId, arr, spanCls) => {
+  const fill = (boxId, countId, arr, cls) => {
     document.getElementById(countId).textContent = arr.length;
     document.getElementById(boxId).innerHTML = arr.length
-      ? arr.map(c => `<span class="${spanCls}">${esc(c)}</span>`).join('')
+      ? arr.map(c=>`<span class="${cls}">${esc(c)}</span>`).join('')
       : '<span style="color:var(--muted)">（无）</span>';
   };
-
   fill('exp-found',   'exp-found-count',   foundList,   'hit');
   fill('exp-pending', 'exp-pending-count', pendingList, '');
   fill('exp-miss',    'exp-miss-count',    missList,    'nope');
-
   document.getElementById('modal-bg').classList.add('open');
 }
-
-function closeExport()            { document.getElementById('modal-bg').classList.remove('open'); }
-function closeExportIfBg(e)       { if (e.target.id === 'modal-bg') closeExport(); }
+function closeExport()      { document.getElementById('modal-bg').classList.remove('open'); }
+function closeExportIfBg(e) { if (e.target.id==='modal-bg') closeExport(); }
 
 function buildReportText() {
-  const foundList   = [...orders.entries()].filter(([,v]) => v==='found').map(([k]) => k);
-  const pendingList = [...orders.entries()].filter(([,v]) => v==='pending').map(([k]) => k);
+  const foundList   = [...orders.entries()].filter(([,v])=>v==='found').map(([k])=>k);
+  const pendingList = [...orders.entries()].filter(([,v])=>v==='pending').map(([k])=>k);
   const missList    = [...missLog];
-  const now = new Date().toLocaleString('zh-CN');
   return [
-    `包裹扫码核验报告  ${now}`,
-    '',
-    `【在列表中已扫到】${foundList.length} 个`,
-    ...foundList,
-    '',
-    `【列表中未扫到】${pendingList.length} 个`,
-    ...pendingList,
-    '',
-    `【扫到但不在列表】${missList.length} 个`,
-    ...missList,
+    `包裹扫码核验报告  ${new Date().toLocaleString('zh-CN')}`,
+    '',`【在列表中已扫到】${foundList.length} 个`,...foundList,
+    '',`【列表中未扫到】${pendingList.length} 个`,...pendingList,
+    '',`【扫到但不在列表】${missList.length} 个`,...missList,
   ].join('\n');
 }
 
@@ -684,58 +451,40 @@ function copyReport() {
   const text = buildReportText();
   const fallback = () => {
     const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta);
-    ta.select(); document.execCommand('copy');
-    document.body.removeChild(ta);
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
     toast('✅ 已复制');
   };
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => toast('✅ 已复制到剪贴板')).catch(fallback);
-  } else fallback();
+  navigator.clipboard ? navigator.clipboard.writeText(text).then(()=>toast('✅ 已复制到剪贴板')).catch(fallback) : fallback();
 }
 
 function downloadCSV() {
-  const foundList   = [...orders.entries()].filter(([,v]) => v==='found').map(([k]) => k);
-  const pendingList = [...orders.entries()].filter(([,v]) => v==='pending').map(([k]) => k);
+  const foundList   = [...orders.entries()].filter(([,v])=>v==='found').map(([k])=>k);
+  const pendingList = [...orders.entries()].filter(([,v])=>v==='pending').map(([k])=>k);
   const missList    = [...missLog];
-
-  const rows = [
-    ['单号', '状态'],
-    ...foundList.map(c   => [c, '在列表中已扫到']),
-    ...pendingList.map(c => [c, '列表中未扫到']),
-    ...missList.map(c    => [c, '扫到但不在列表']),
-  ];
-
-  const csv  = '\uFEFF' + rows.map(r =>
-    r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')
-  ).join('\n');
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `包裹核验_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const rows = [['单号','状态'],
+    ...foundList.map(c=>[c,'在列表中已扫到']),
+    ...pendingList.map(c=>[c,'列表中未扫到']),
+    ...missList.map(c=>[c,'扫到但不在列表'])];
+  const csv = '\uFEFF' + rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
+    download: `包裹核验_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.csv`
+  });
+  a.click(); URL.revokeObjectURL(a.href);
   toast('💾 CSV 已下载');
 }
 
-// ── Misc ───────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+//  Utils
+// ─────────────────────────────────────────────
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2500);
 }
-
-function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch(e) {} }
-
-function esc(s) {
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;');
-}
+function vibrate(p) { try { navigator.vibrate&&navigator.vibrate(p); } catch(e){} }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>
