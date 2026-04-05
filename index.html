@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>包裹扫码核验</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 <style>
   :root {
     --bg: #f5f7fa;
@@ -372,9 +372,10 @@ const missLog = new Set();
 let scanning    = false;
 let stream      = null;
 let animFrame   = null;
+let zxingReader = null;
 let barcodeDetector = null;
 
-const lastSeen = new Map(); // code → timestamp (debounce)
+const lastSeen = new Map();
 const DEBOUNCE = 2000;
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
@@ -386,7 +387,32 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 });
 
-// ── Native BarcodeDetector (supports 1D barcodes: code128, EAN etc.) ──────
+// ── ZXing init (1D + 2D: Code128, Code39, EAN, QR, DataMatrix…) ───────────
+function initZxing() {
+  try {
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39,
+      ZXing.BarcodeFormat.CODE_93,
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.ITF,
+      ZXing.BarcodeFormat.CODABAR,
+      ZXing.BarcodeFormat.QR_CODE,
+      ZXing.BarcodeFormat.DATA_MATRIX,
+      ZXing.BarcodeFormat.PDF_417,
+      ZXing.BarcodeFormat.AZTEC,
+    ]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    zxingReader = new ZXing.MultiFormatReader();
+    zxingReader.setHints(hints);
+  } catch(e) { console.warn('ZXing init failed', e); }
+}
+
+// ── Native BarcodeDetector (pass canvas, not video element) ───────────────
 (async () => {
   if ('BarcodeDetector' in window) {
     try {
@@ -440,12 +466,13 @@ function renderOrderList() {
 // ── Camera ─────────────────────────────────────────────────────────────────
 async function startCamera() {
   if (orders.size === 0) { toast('请先在「导入单号」中添加单号'); return; }
+  initZxing();
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: 'environment' },
-        width:  { ideal: 1920 },
-        height: { ideal: 1080 }
+        width:  { ideal: 1280 },
+        height: { ideal: 720 }
       }
     });
     const video = document.getElementById('video');
@@ -464,7 +491,7 @@ async function startCamera() {
 
 function stopCamera() {
   scanning = false;
-  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  if (animFrame) { clearTimeout(animFrame); animFrame = null; }
   if (stream)    { stream.getTracks().forEach(t => t.stop()); stream = null; }
   document.getElementById('btn-start').style.display = '';
   document.getElementById('btn-stop').style.display  = 'none';
@@ -472,7 +499,8 @@ function stopCamera() {
 }
 
 // ── Scan loop ──────────────────────────────────────────────────────────────
-// Priority: native BarcodeDetector (handles 1D barcodes) → jsQR (QR only)
+// 1) ZXing MultiFormatReader  → supports Code128, Code39, EAN, QR, etc.
+// 2) Native BarcodeDetector   → extra safety net (pass canvas ImageBitmap)
 async function tickScan() {
   if (!scanning) return;
 
@@ -481,24 +509,32 @@ async function tickScan() {
   let detected = null;
 
   if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+    // Draw current frame onto canvas
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(video, 0, 0);
 
-    // 1) Native BarcodeDetector
-    if (barcodeDetector) {
+    // 1) ZXing (primary – handles 1D + 2D)
+    if (zxingReader && !detected) {
       try {
-        const results = await barcodeDetector.detect(video);
-        if (results.length > 0) detected = results[0].rawValue;
-      } catch(e) {}
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const lum = new ZXing.RGBLuminanceSource(imgData.data, canvas.width, canvas.height);
+        const bin = new ZXing.HybridBinarizer(lum);
+        const bmp = new ZXing.BinaryBitmap(bin);
+        const result = zxingReader.decode(bmp);
+        if (result) detected = result.getText();
+      } catch(e) { /* NotFoundException is normal when no code in frame */ }
     }
 
-    // 2) jsQR fallback (attemptBoth = normal + inverted)
-    if (!detected) {
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      ctx.drawImage(video, 0, 0);
-      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const qr  = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
-      if (qr) detected = qr.data;
+    // 2) Native BarcodeDetector on canvas (Android Chrome ≥ 83)
+    if (!detected && barcodeDetector) {
+      try {
+        const bitmap = await createImageBitmap(canvas);
+        const results = await barcodeDetector.detect(bitmap);
+        bitmap.close();
+        if (results.length > 0) detected = results[0].rawValue;
+      } catch(e) {}
     }
 
     if (detected) {
@@ -511,7 +547,8 @@ async function tickScan() {
     }
   }
 
-  animFrame = requestAnimationFrame(() => tickScan());
+  // Use setTimeout instead of rAF to avoid flooding async stack
+  animFrame = setTimeout(() => tickScan(), 150);
 }
 
 // ── Check logic ────────────────────────────────────────────────────────────
