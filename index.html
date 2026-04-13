@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>包裹扫码核验 v1.0</title>
+<title>包裹扫码核验 v1.1</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root {
@@ -125,7 +125,7 @@ textarea::placeholder{color:var(--muted)}
 <header>
   <div class="logo">📦</div>
   <div>
-    <div style="font-size:15px;font-weight:700">包裹扫码核验 v1.0</div>
+    <div style="font-size:15px;font-weight:700">包裹扫码核验 v1.1</div>
     <div style="font-size:11px;color:var(--muted)">PACKAGE SCANNER</div>
   </div>
 </header>
@@ -284,13 +284,13 @@ async function startScan() {
   // 优先后置摄像头
   // 扫描框尺寸：取屏幕较小边的 85%，宽高比 16:9 适合同时涵盖二维码+条形码
   const vw = Math.min(window.innerWidth, 600);
-  const qrW = Math.round(vw * 0.85);
-  const qrH = Math.round(qrW * 0.62);   // 宽矩形，条形码横放也能扫进
+  const qrW = Math.round(vw * 0.65);
+  const qrH = Math.round(qrW * 0.55);   // 宽矩形兼顾条形码+二维码，但不占满屏
 
   const config = {
     fps: 20,
     qrbox: { width: qrW, height: qrH },
-    aspectRatio: 16 / 9,
+    aspectRatio: 4 / 3,
     supportedScanTypes: [
       Html5QrcodeScanType.SCAN_TYPE_CAMERA
     ],
