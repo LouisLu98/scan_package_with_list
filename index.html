@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>包裹扫码核验</title>
-<!-- ZXing browser library – BrowserMultiFormatReader handles continuous decode internally -->
-<script src="https://unpkg.com/@zxing/browser@0.1.4/umd/index.min.js"></script>
+<title>包裹扫码核验 V1.0</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root {
   --bg:#f5f7fa; --surface:#fff; --border:#e1e5ea;
@@ -13,9 +12,10 @@
   --text:#1f2328; --muted:#6e7781; --radius:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:'SF Mono','Fira Code',Consolas,monospace;min-height:100vh;display:flex;flex-direction:column}
+body{background:var(--bg);color:var(--text);font-family:'SF Pro Text','Helvetica Neue',Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;max-width:600px;margin:0 auto}
+
 header{padding:14px 20px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface)}
-.logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#bc8cff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#bc8cff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 
 .stats-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
 .stat{background:var(--surface);padding:10px;text-align:center}
@@ -31,7 +31,7 @@ header{padding:14px 20px 11px;border-bottom:1px solid var(--border);display:flex
 
 /* IMPORT */
 .import-panel{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.import-panel label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;display:block}
+.field-label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;display:block}
 textarea{width:100%;min-height:140px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px;padding:12px;resize:vertical;outline:none;line-height:1.6;transition:border-color .2s}
 textarea:focus{border-color:var(--accent)}
 textarea::placeholder{color:var(--muted)}
@@ -49,24 +49,39 @@ textarea::placeholder{color:var(--muted)}
 
 /* SCAN */
 .camera-wrap{position:relative;background:#000;overflow:hidden;flex-shrink:0}
-#video{width:100%;display:block;max-height:260px;object-fit:cover}
-.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.scan-frame{width:200px;height:200px;position:relative}
-.scan-frame::before,.scan-frame::after,.scan-frame>span::before,.scan-frame>span::after{content:'';position:absolute;width:26px;height:26px;border-color:#fff;border-style:solid}
-.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px}
-.scan-frame::after{top:0;right:0;border-width:3px 3px 0 0}
-.scan-frame>span::before{bottom:0;left:0;border-width:0 0 3px 3px}
-.scan-frame>span::after{bottom:0;right:0;border-width:0 3px 3px 0}
-.scan-line{position:absolute;left:8px;right:8px;height:2px;background:linear-gradient(90deg,transparent,#fff,transparent);animation:scanline 2s ease-in-out infinite;top:50%}
-@keyframes scanline{0%{transform:translateY(-90px);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(90px);opacity:0}}
-.cam-status-badge{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);padding:4px 14px;border-radius:100px;font-size:11px;color:#fff;backdrop-filter:blur(4px);white-space:nowrap}
+
+/* html5-qrcode 默认会渲染一个 div#reader，内含 video 和 canvas */
+#reader{width:100%;max-height:280px;overflow:hidden}
+/* 隐藏 html5-qrcode 自带的多余UI */
+#reader__scan_region > img{display:none!important}
+#reader__dashboard_section_csr button{
+  font-family:inherit!important;
+  background:var(--accent)!important;
+  color:#fff!important;
+  border:none!important;
+  border-radius:8px!important;
+  padding:8px 16px!important;
+  font-size:13px!important;
+  cursor:pointer!important;
+}
+#reader__camera_selection{
+  font-family:inherit!important;
+  border:1px solid var(--border)!important;
+  border-radius:8px!important;
+  padding:6px 10px!important;
+  font-size:12px!important;
+  background:var(--bg)!important;
+  color:var(--text)!important;
+}
+
+.cam-status-badge{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);padding:4px 14px;border-radius:100px;font-size:11px;color:#fff;backdrop-filter:blur(4px);white-space:nowrap;z-index:10;pointer-events:none}
 
 .scan-controls{padding:10px 16px;display:flex;gap:8px;border-bottom:1px solid var(--border);background:var(--surface)}
 .btn-scan{flex:1;background:var(--green);color:#fff}
 .btn-stop{flex:1;background:transparent;color:var(--red);border:1px solid var(--red)}
 .btn-exp-sm{flex:0 0 auto;background:var(--accent);color:#fff;font-size:12px;padding:9px 14px}
 
-.result-flash{padding:13px 16px;display:flex;align-items:center;gap:12px;background:var(--surface);border-bottom:1px solid var(--border);min-height:66px;transition:background .2s}
+.result-flash{padding:13px 16px;display:flex;align-items:center;gap:12px;background:var(--surface);border-bottom:1px solid var(--border);min-height:66px;transition:background .3s}
 .result-flash.flash-found{background:rgba(30,142,62,.1)}
 .result-flash.flash-miss{background:rgba(217,48,37,.1)}
 .result-icon{font-size:26px;flex-shrink:0;line-height:1}
@@ -74,11 +89,11 @@ textarea::placeholder{color:var(--muted)}
 .result-msg{font-size:12px;color:var(--muted);margin-top:2px}
 
 .manual-row{display:flex;gap:8px;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
-.manual-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 12px;outline:none}
+.manual-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 12px;outline:none;transition:border-color .2s}
 .manual-input:focus{border-color:var(--accent)}
 .btn-manual{background:var(--accent);color:#fff;padding:9px 16px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;border:none;cursor:pointer;flex-shrink:0}
 
-.scan-log{flex:1;overflow-y:auto;padding:8px 16px}
+.scan-log{flex:1;overflow-y:auto;padding:8px 16px;min-height:0}
 .log-title{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:6px}
 .log-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(225,229,234,.8);font-size:12px}
 .log-icon{font-size:14px;flex-shrink:0}
@@ -89,7 +104,7 @@ textarea::placeholder{color:var(--muted)}
 /* EXPORT MODAL */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:flex-end;justify-content:center}
 .modal-bg.open{display:flex}
-.modal{background:var(--surface);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:20px 20px 36px;display:flex;flex-direction:column;gap:12px;animation:slideUp .25s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto}
+.modal{background:var(--surface);width:100%;max-width:600px;border-radius:16px 16px 0 0;padding:20px 20px 36px;display:flex;flex-direction:column;gap:12px;animation:slideUp .25s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-title{font-size:15px;font-weight:700}
 .modal-section{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
@@ -130,14 +145,14 @@ textarea::placeholder{color:var(--muted)}
 <div class="panel active" id="panel-import">
   <div class="import-panel">
     <div>
-      <label>粘贴或输入单号（每行一个）</label>
+      <label class="field-label">粘贴或输入单号（每行一个）</label>
       <textarea id="raw-input" placeholder="请粘贴单号，每行一个&#10;例如：&#10;SF1234567890&#10;JD0987654321&#10;YT1122334455"></textarea>
     </div>
     <button class="btn btn-primary" onclick="importOrders()">✅ 导入单号</button>
     <button class="btn btn-export"  onclick="openExport()">📤 导出核验报告</button>
     <button class="btn btn-danger"  onclick="clearAll()">🗑 清空全部</button>
     <div id="order-list-wrap" style="display:none">
-      <label id="list-label">单号列表</label>
+      <label class="field-label" id="list-label">单号列表</label>
       <div class="order-list" id="order-list"></div>
     </div>
   </div>
@@ -146,10 +161,7 @@ textarea::placeholder{color:var(--muted)}
 <!-- SCAN -->
 <div class="panel" id="panel-scan">
   <div class="camera-wrap">
-    <video id="video" autoplay playsinline muted></video>
-    <div class="scan-overlay">
-      <div class="scan-frame"><span></span><div class="scan-line"></div></div>
-    </div>
+    <div id="reader"></div>
     <div class="cam-status-badge" id="cam-status">摄像头未启动</div>
   </div>
 
@@ -168,7 +180,7 @@ textarea::placeholder{color:var(--muted)}
   </div>
 
   <div class="manual-row">
-    <input class="manual-input" id="manual-in" placeholder="手动输入单号按回车" />
+    <input class="manual-input" id="manual-in" placeholder="手动输入单号，按回车核验" />
     <button class="btn-manual" onclick="checkManual()">核验</button>
   </div>
 
@@ -205,25 +217,18 @@ textarea::placeholder{color:var(--muted)}
 <div id="toast"></div>
 
 <script>
-// ─────────────────────────────────────────────
-//  State
-// ─────────────────────────────────────────────
-const orders = new Map();   // code → 'pending' | 'found'   (imported list only)
-const missLog = new Set();  // scanned but NOT in list
+// ─── State ───────────────────────────────────
+const orders  = new Map();  // code → 'pending'|'found'
+const missLog = new Set();
 
-let codeReader = null;      // ZXing BrowserMultiFormatReader instance
-let scanActive = false;
+let html5QrCode = null;
+let scanActive  = false;
 
-// Debounce: same code must wait this long before triggering again
-const DEBOUNCE_MS = 1500;
-const lastSeen = new Map();
+const DEBOUNCE_MS = 2000;
+const lastSeen    = new Map();
+let   resetTimer  = null;
 
-// Auto-reset result display timer
-let resetTimer = null;
-
-// ─────────────────────────────────────────────
-//  Tabs
-// ─────────────────────────────────────────────
+// ─── Tabs ────────────────────────────────────
 document.querySelectorAll('.tab').forEach(t => {
   t.addEventListener('click', () => {
     document.querySelectorAll('.tab,.panel').forEach(e => e.classList.remove('active'));
@@ -232,9 +237,7 @@ document.querySelectorAll('.tab').forEach(t => {
   });
 });
 
-// ─────────────────────────────────────────────
-//  Import
-// ─────────────────────────────────────────────
+// ─── Import ──────────────────────────────────
 function importOrders() {
   const raw = document.getElementById('raw-input').value.trim();
   if (!raw) { toast('请先输入单号'); return; }
@@ -242,7 +245,7 @@ function importOrders() {
   let added = 0;
   lines.forEach(code => { if (!orders.has(code)) { orders.set(code, 'pending'); added++; } });
   renderOrderList(); updateStats();
-  toast(`✅ 已导入 ${added} 个单号（共 ${orders.size} 个）`);
+  toast('✅ 已导入 ' + added + ' 个单号（共 ' + orders.size + ' 个）');
   document.getElementById('raw-input').value = '';
 }
 
@@ -259,57 +262,62 @@ function renderOrderList() {
   const wrap = document.getElementById('order-list-wrap');
   if (!orders.size) { wrap.style.display = 'none'; return; }
   wrap.style.display = '';
-  document.getElementById('list-label').textContent = `单号列表（${orders.size} 个）`;
-  document.getElementById('order-list').innerHTML = [...orders.entries()].map(([code, st]) => `
-    <div class="order-item">
-      <span style="word-break:break-all;font-size:13px">${esc(code)}</span>
-      <span class="badge badge-${st}">${st === 'found' ? '✓ 已扫' : '待扫'}</span>
-    </div>`).join('');
+  document.getElementById('list-label').textContent = '单号列表（' + orders.size + ' 个）';
+  document.getElementById('order-list').innerHTML = [...orders.entries()].map(([code, st]) =>
+    '<div class="order-item"><span style="word-break:break-all;font-size:13px">' + esc(code) +
+    '</span><span class="badge badge-' + st + '">' + (st==='found'?'✓ 已扫':'待扫') + '</span></div>'
+  ).join('');
 }
 
-// ─────────────────────────────────────────────
-//  Scanner  –  uses BrowserMultiFormatReader
-//  which calls the callback on EVERY decoded
-//  frame continuously, no manual loop needed.
-// ─────────────────────────────────────────────
+// ─── Scanner (html5-qrcode) ──────────────────
 async function startScan() {
   if (orders.size === 0) { toast('请先在「导入单号」中添加单号'); return; }
   if (scanActive) return;
 
-  // ZXing @zxing/browser exposes ZXingBrowser global
-  const ZB = window.ZXingBrowser || window.ZXing;
-  if (!ZB || !ZB.BrowserMultiFormatReader) {
-    toast('扫码库加载失败，请检查网络后刷新');
-    return;
+  if (html5QrCode) {
+    try { await html5QrCode.stop(); } catch(e) {}
+    html5QrCode = null;
   }
 
-  codeReader = new ZB.BrowserMultiFormatReader();
+  html5QrCode = new Html5Qrcode('reader');
+
+  // 优先后置摄像头
+  const config = {
+    fps: 15,
+    qrbox: { width: 220, height: 220 },
+    aspectRatio: 1.2,
+    supportedScanTypes: [
+      Html5QrcodeScanType.SCAN_TYPE_CAMERA
+    ],
+    rememberLastUsedCamera: true,
+    // 支持更多条码格式
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.ITF,
+      Html5QrcodeSupportedFormats.DATA_MATRIX,
+      Html5QrcodeSupportedFormats.PDF_417,
+    ]
+  };
 
   try {
-    // Get back camera
-    const devices = await ZB.BrowserMultiFormatReader.listVideoInputDevices();
-    // Prefer back camera (environment)
-    const device = devices.find(d =>
-      /back|rear|environment/i.test(d.label)
-    ) || devices[devices.length - 1] || null;
-
-    const videoEl = document.getElementById('video');
-
-    // decodeFromVideoDevice fires callback on every successful decode
-    await codeReader.decodeFromVideoDevice(
-      device ? device.deviceId : undefined,
-      videoEl,
-      (result, err) => {
-        if (!result) return;           // err = NotFoundException on every empty frame, safe to ignore
-        const code = result.getText().trim();
+    await html5QrCode.start(
+      { facingMode: 'environment' },
+      config,
+      (decodedText) => {
+        const code = decodedText.trim();
         if (!code) return;
-
         const now = Date.now();
         if (lastSeen.has(code) && now - lastSeen.get(code) < DEBOUNCE_MS) return;
         lastSeen.set(code, now);
-
         processCode(code);
-      }
+      },
+      () => {}  // 静默忽略每帧找不到码的错误
     );
 
     scanActive = true;
@@ -319,15 +327,18 @@ async function startScan() {
 
   } catch(e) {
     console.error(e);
-    toast('摄像头启动失败：' + (e.message || e));
-    codeReader = null;
+    html5QrCode = null;
+    let msg = e.message || String(e);
+    if (/permission/i.test(msg)) msg = '未获得摄像头权限，请在浏览器设置中允许';
+    toast('摄像头启动失败：' + msg);
   }
 }
 
-function stopScan() {
-  if (codeReader) {
-    try { codeReader.reset(); } catch(e) {}
-    codeReader = null;
+async function stopScan() {
+  if (html5QrCode) {
+    try { await html5QrCode.stop(); } catch(e) {}
+    try { html5QrCode.clear(); }      catch(e) {}
+    html5QrCode = null;
   }
   scanActive = false;
   document.getElementById('btn-start').style.display = '';
@@ -335,9 +346,7 @@ function stopScan() {
   document.getElementById('cam-status').textContent  = '摄像头已停止';
 }
 
-// ─────────────────────────────────────────────
-//  Process scanned code
-// ─────────────────────────────────────────────
+// ─── Process Code ────────────────────────────
 function processCode(code) {
   if (orders.has(code)) {
     orders.set(code, 'found');
@@ -353,32 +362,33 @@ function processCode(code) {
   }
   updateStats();
 
-  // Auto-reset after 1.5 s so UI shows "ready for next scan"
+  // 1.8 秒后自动恢复"等待扫描"状态，继续下一单
   if (resetTimer) clearTimeout(resetTimer);
-  resetTimer = setTimeout(() => { if (scanActive) resetResult(); }, 1500);
+  resetTimer = setTimeout(() => {
+    if (scanActive) resetResult();
+  }, 1800);
 }
 
 function checkManual() {
-  const inp = document.getElementById('manual-in');
+  const inp  = document.getElementById('manual-in');
   const code = inp.value.trim();
   if (!code) return;
-  lastSeen.delete(code);
+  lastSeen.delete(code);  // 手动输入不受防抖限制
   processCode(code);
   inp.value = '';
   inp.focus();
 }
+
 document.getElementById('manual-in').addEventListener('keydown', e => {
   if (e.key === 'Enter') checkManual();
 });
 
-// ─────────────────────────────────────────────
-//  UI helpers
-// ─────────────────────────────────────────────
+// ─── UI Helpers ──────────────────────────────
 function showResult(icon, code, msg, cls) {
   document.getElementById('r-icon').textContent = icon;
   const el = document.getElementById('r-code');
-  el.textContent = code;
-  el.style.color = cls === 'flash-found' ? 'var(--green)' : 'var(--red)';
+  el.textContent  = code;
+  el.style.color  = cls === 'flash-found' ? 'var(--green)' : 'var(--red)';
   document.getElementById('r-msg').textContent = msg;
   document.getElementById('result-flash').className = 'result-flash ' + cls;
 }
@@ -400,9 +410,9 @@ function addLog(icon, code, found) {
     .map(n => String(n).padStart(2,'0')).join(':');
   const item = document.createElement('div');
   item.className = 'log-item';
-  item.innerHTML = `<span class="log-icon">${icon}</span>
-    <span class="log-code" style="color:${found?'var(--green)':'var(--red)'}">${esc(code)}</span>
-    <span class="log-time">${t}</span>`;
+  item.innerHTML = '<span class="log-icon">' + icon + '</span>' +
+    '<span class="log-code" style="color:' + (found?'var(--green)':'var(--red)') + '">' + esc(code) + '</span>' +
+    '<span class="log-time">' + t + '</span>';
   body.insertBefore(item, body.firstChild);
 }
 
@@ -414,9 +424,7 @@ function updateStats() {
   document.getElementById('s-miss').textContent  = missLog.size;
 }
 
-// ─────────────────────────────────────────────
-//  Export
-// ─────────────────────────────────────────────
+// ─── Export ──────────────────────────────────
 function openExport() {
   const foundList   = [...orders.entries()].filter(([,v])=>v==='found').map(([k])=>k);
   const pendingList = [...orders.entries()].filter(([,v])=>v==='pending').map(([k])=>k);
@@ -424,7 +432,7 @@ function openExport() {
   const fill = (boxId, countId, arr, cls) => {
     document.getElementById(countId).textContent = arr.length;
     document.getElementById(boxId).innerHTML = arr.length
-      ? arr.map(c=>`<span class="${cls}">${esc(c)}</span>`).join('')
+      ? arr.map(c=>'<span class="'+cls+'">'+esc(c)+'</span>').join('')
       : '<span style="color:var(--muted)">（无）</span>';
   };
   fill('exp-found',   'exp-found-count',   foundList,   'hit');
@@ -440,10 +448,10 @@ function buildReportText() {
   const pendingList = [...orders.entries()].filter(([,v])=>v==='pending').map(([k])=>k);
   const missList    = [...missLog];
   return [
-    `包裹扫码核验报告  ${new Date().toLocaleString('zh-CN')}`,
-    '',`【在列表中已扫到】${foundList.length} 个`,...foundList,
-    '',`【列表中未扫到】${pendingList.length} 个`,...pendingList,
-    '',`【扫到但不在列表】${missList.length} 个`,...missList,
+    '包裹扫码核验报告  ' + new Date().toLocaleString('zh-CN'),
+    '', '【在列表中已扫到】' + foundList.length + ' 个', ...foundList,
+    '', '【列表中未扫到】'  + pendingList.length + ' 个', ...pendingList,
+    '', '【扫到但不在列表】' + missList.length   + ' 个', ...missList,
   ].join('\n');
 }
 
@@ -455,7 +463,9 @@ function copyReport() {
     document.execCommand('copy'); document.body.removeChild(ta);
     toast('✅ 已复制');
   };
-  navigator.clipboard ? navigator.clipboard.writeText(text).then(()=>toast('✅ 已复制到剪贴板')).catch(fallback) : fallback();
+  navigator.clipboard
+    ? navigator.clipboard.writeText(text).then(()=>toast('✅ 已复制到剪贴板')).catch(fallback)
+    : fallback();
 }
 
 function downloadCSV() {
@@ -466,24 +476,22 @@ function downloadCSV() {
     ...foundList.map(c=>[c,'在列表中已扫到']),
     ...pendingList.map(c=>[c,'列表中未扫到']),
     ...missList.map(c=>[c,'扫到但不在列表'])];
-  const csv = '\uFEFF' + rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const csv = '\uFEFF' + rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a = Object.assign(document.createElement('a'), {
     href: URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),
-    download: `包裹核验_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.csv`
+    download: '包裹核验_' + new Date().toLocaleDateString('zh-CN').replace(/\//g,'-') + '.csv'
   });
   a.click(); URL.revokeObjectURL(a.href);
   toast('💾 CSV 已下载');
 }
 
-// ─────────────────────────────────────────────
-//  Utils
-// ─────────────────────────────────────────────
+// ─── Utils ───────────────────────────────────
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'), 2500);
 }
-function vibrate(p) { try { navigator.vibrate&&navigator.vibrate(p); } catch(e){} }
+function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch(e){} }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
