@@ -47,55 +47,42 @@ textarea::placeholder{color:var(--muted)}
 .badge-pending{background:rgba(110,119,129,.12);color:var(--muted)}
 .badge-found{background:rgba(30,142,62,.12);color:var(--green)}
 
-/* SCAN */
-.camera-wrap{position:relative;background:#000;overflow:hidden;flex-shrink:0;height:220px}
-/* html5-qrcode 默认会渲染一个 div#reader，内含 video 和 canvas */
-#reader{width:100%;height:220px;overflow:hidden}
-#reader video{width:100%!important;height:220px!important;object-fit:cover!important;display:block!important;max-height:220px!important}
-#reader canvas{display:none!important}
-/* 扫描框叠加层也需要限高 */
-#reader__scan_region{height:220px!important;overflow:hidden!important}
-/* 隐藏 html5-qrcode 自带的多余UI */
-#reader__scan_region > img{display:none!important}
-#reader__dashboard_section_csr button{
-  font-family:inherit!important;
-  background:var(--accent)!important;
-  color:#fff!important;
-  border:none!important;
-  border-radius:8px!important;
-  padding:8px 16px!important;
-  font-size:13px!important;
-  cursor:pointer!important;
-}
-#reader__camera_selection{
-  font-family:inherit!important;
-  border:1px solid var(--border)!important;
-  border-radius:8px!important;
-  padding:6px 10px!important;
-  font-size:12px!important;
-  background:var(--bg)!important;
-  color:var(--text)!important;
-}
+/* SCAN panel - 正常布局，摄像头按钮居中 */
+.scan-idle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px 20px}
+.btn-scan-big{background:var(--green);color:#fff;font-size:16px;padding:16px 40px;border-radius:var(--radius);border:none;font-family:inherit;font-weight:700;cursor:pointer;letter-spacing:.04em}
 
-.cam-status-badge{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);padding:4px 14px;border-radius:100px;font-size:11px;color:#fff;backdrop-filter:blur(4px);white-space:nowrap;z-index:10;pointer-events:none}
+/* 全屏扫描层 */
+.fullscreen-scan{display:none;position:fixed;inset:0;z-index:200;background:#000;flex-direction:column}
+.fullscreen-scan.active{display:flex}
+#reader-fs{flex:1;width:100%;overflow:hidden}
+#reader-fs video{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important}
 
-.scan-controls{padding:10px 16px;display:flex;gap:8px;border-bottom:1px solid var(--border);background:var(--surface)}
-.btn-scan{flex:1;background:var(--green);color:#fff}
-.btn-stop{flex:1;background:transparent;color:var(--red);border:1px solid var(--red)}
-.btn-exp-sm{flex:0 0 auto;background:var(--accent);color:#fff;font-size:12px;padding:9px 14px}
+/* 全屏顶部工具栏 */
+.fs-topbar{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.6),transparent);z-index:10}
+.fs-title{color:#fff;font-size:14px;font-weight:700}
+.fs-stats{display:flex;gap:12px}
+.fs-stat{font-size:12px;font-weight:700;padding:3px 10px;border-radius:100px;background:rgba(255,255,255,.15);color:#fff}
+.btn-fs-stop{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;font-size:12px;padding:6px 14px;border-radius:8px;font-family:inherit;font-weight:600;cursor:pointer}
+.btn-fs-export{background:rgba(26,115,232,.8);border:none;color:#fff;font-size:12px;padding:6px 14px;border-radius:8px;font-family:inherit;font-weight:600;cursor:pointer}
 
-.result-flash{padding:13px 16px;display:flex;align-items:center;gap:12px;background:var(--surface);border-bottom:1px solid var(--border);min-height:66px;transition:background .3s}
-.result-flash.flash-found{background:rgba(30,142,62,.1)}
-.result-flash.flash-miss{background:rgba(217,48,37,.1)}
-.result-icon{font-size:26px;flex-shrink:0;line-height:1}
-.result-code{font-size:14px;font-weight:700;word-break:break-all}
-.result-msg{font-size:12px;color:var(--muted);margin-top:2px}
+/* 底部手动输入栏 */
+.fs-manual{position:absolute;bottom:0;left:0;right:0;display:flex;gap:8px;padding:12px 16px 28px;background:linear-gradient(to top,rgba(0,0,0,.7),transparent);z-index:10}
+.fs-manual-input{flex:1;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:8px;color:#fff;font-family:inherit;font-size:14px;padding:10px 14px;outline:none}
+.fs-manual-input::placeholder{color:rgba(255,255,255,.5)}
+.fs-manual-input:focus{border-color:rgba(255,255,255,.7)}
+.btn-fs-manual{background:var(--accent);border:none;color:#fff;padding:10px 16px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0}
 
-.manual-row{display:flex;gap:8px;padding:10px 16px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
-.manual-input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 12px;outline:none;transition:border-color .2s}
-.manual-input:focus{border-color:var(--accent)}
-.btn-manual{background:var(--accent);color:#fff;padding:9px 16px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;border:none;cursor:pointer;flex-shrink:0}
+/* 扫描结果 Popup */
+.scan-popup{position:absolute;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;min-width:260px;max-width:88vw}
+.scan-popup.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.popup-inner{border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.popup-inner.found{background:rgba(20,110,40,.92)}
+.popup-inner.miss{background:rgba(180,30,20,.88)}
+.popup-icon{font-size:28px;line-height:1;flex-shrink:0}
+.popup-code{font-size:15px;font-weight:700;color:#fff;word-break:break-all}
+.popup-msg{font-size:12px;color:rgba(255,255,255,.8);margin-top:3px}
 
+/* 扫描记录（非全屏时显示） */
 .scan-log{flex:1;overflow-y:auto;padding:8px 16px;min-height:0}
 .log-title{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:8px 0 6px;border-bottom:1px solid var(--border);margin-bottom:6px}
 .log-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(225,229,234,.8);font-size:12px}
@@ -163,33 +150,49 @@ textarea::placeholder{color:var(--muted)}
 
 <!-- SCAN -->
 <div class="panel" id="panel-scan">
-  <div class="camera-wrap">
-    <div id="reader"></div>
-    <div class="cam-status-badge" id="cam-status">摄像头未启动</div>
+  <div class="scan-idle">
+    <div style="font-size:48px">📷</div>
+    <div style="font-size:16px;font-weight:700;color:var(--text)">扫码核验</div>
+    <div style="font-size:13px;color:var(--muted);text-align:center">点击开始，摄像头全屏展开<br>扫到结果后自动弹出提示</div>
+    <button class="btn-scan-big" onclick="startScan()">▶ 开始扫描</button>
+    <button class="btn btn-exp-sm" style="background:var(--accent);color:#fff;font-size:13px;padding:10px 24px;border-radius:var(--radius)" onclick="openExport()">📤 导出报告</button>
   </div>
-
-  <div class="scan-controls">
-    <button class="btn btn-scan"   id="btn-start" onclick="startScan()">▶ 开始扫描</button>
-    <button class="btn btn-stop"   id="btn-stop"  onclick="stopScan()" style="display:none">⏹ 停止</button>
-    <button class="btn btn-exp-sm" onclick="openExport()">📤 导出</button>
+  <div class="scan-log" style="border-top:1px solid var(--border)">
+    <div class="log-title">扫描记录</div>
+    <div id="log-body"><div class="empty-hint">暂无扫描记录</div></div>
   </div>
+</div>
 
-  <div class="result-flash" id="result-flash">
-    <div class="result-icon" id="r-icon">⬜</div>
-    <div>
-      <div class="result-code" id="r-code" style="color:var(--muted)">等待扫描...</div>
-      <div class="result-msg"  id="r-msg">将条形码/二维码对准扫描框</div>
+<!-- 全屏扫描层 -->
+<div class="fullscreen-scan" id="fs-scan">
+  <div id="reader-fs"></div>
+
+  <div class="fs-topbar">
+    <div class="fs-title">📦 扫码核验</div>
+    <div class="fs-stats">
+      <span class="fs-stat" id="fs-found" style="background:rgba(30,142,62,.5)">✓ 0</span>
+      <span class="fs-stat" id="fs-miss"  style="background:rgba(217,48,37,.45)">✗ 0</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-fs-export" onclick="openExport()">📤 导出</button>
+      <button class="btn-fs-stop"   onclick="stopScan()">⏹ 停止</button>
     </div>
   </div>
 
-  <div class="manual-row">
-    <input class="manual-input" id="manual-in" placeholder="手动输入单号，按回车核验" />
-    <button class="btn-manual" onclick="checkManual()">核验</button>
+  <!-- 结果 Popup -->
+  <div class="scan-popup" id="scan-popup">
+    <div class="popup-inner" id="popup-inner">
+      <div class="popup-icon" id="popup-icon">✅</div>
+      <div>
+        <div class="popup-code" id="popup-code"></div>
+        <div class="popup-msg"  id="popup-msg"></div>
+      </div>
+    </div>
   </div>
 
-  <div class="scan-log">
-    <div class="log-title">扫描记录</div>
-    <div id="log-body"><div class="empty-hint">暂无扫描记录</div></div>
+  <div class="fs-manual">
+    <input class="fs-manual-input" id="fs-manual-in" placeholder="手动输入单号，按回车核验" />
+    <button class="btn-fs-manual" onclick="checkFsManual()">核验</button>
   </div>
 </div>
 
@@ -282,23 +285,19 @@ async function startScan() {
     html5QrCode = null;
   }
 
-  html5QrCode = new Html5Qrcode('reader');
+  // 展开全屏层
+  document.getElementById('fs-scan').classList.add('active');
 
-  // 优先后置摄像头
-  // 扫描框尺寸：取屏幕较小边的 85%，宽高比 16:9 适合同时涵盖二维码+条形码
-  const vw = Math.min(window.innerWidth, 600);
-  const qrW = Math.round(vw * 0.60);
-  const qrH = Math.min(Math.round(qrW * 0.50), 140);  // 最高140px，严格在220px容器内可见
+  html5QrCode = new Html5Qrcode('reader-fs');
 
   const config = {
     fps: 20,
-    qrbox: { width: qrW, height: qrH },
-    aspectRatio: 16 / 9,
-    supportedScanTypes: [
-      Html5QrcodeScanType.SCAN_TYPE_CAMERA
-    ],
+    qrbox: (w, h) => {
+      const side = Math.round(Math.min(w, h) * 0.65);
+      return { width: side, height: Math.round(side * 0.6) };
+    },
+    aspectRatio: window.innerHeight / window.innerWidth,
     rememberLastUsedCamera: true,
-    // 支持更多条码格式
     formatsToSupport: [
       Html5QrcodeSupportedFormats.QR_CODE,
       Html5QrcodeSupportedFormats.CODE_128,
@@ -325,16 +324,12 @@ async function startScan() {
         lastSeen.set(code, now);
         processCode(code);
       },
-      () => {}  // 静默忽略每帧找不到码的错误
+      () => {}
     );
-
     scanActive = true;
-    document.getElementById('btn-start').style.display = 'none';
-    document.getElementById('btn-stop').style.display  = '';
-    document.getElementById('cam-status').textContent  = '扫描中…';
-
   } catch(e) {
     console.error(e);
+    document.getElementById('fs-scan').classList.remove('active');
     html5QrCode = null;
     let msg = e.message || String(e);
     if (/permission/i.test(msg)) msg = '未获得摄像头权限，请在浏览器设置中允许';
@@ -349,65 +344,62 @@ async function stopScan() {
     html5QrCode = null;
   }
   scanActive = false;
-  document.getElementById('btn-start').style.display = '';
-  document.getElementById('btn-stop').style.display  = 'none';
-  document.getElementById('cam-status').textContent  = '摄像头已停止';
+  document.getElementById('fs-scan').classList.remove('active');
+  hidePopup();
 }
 
 // ─── Process Code ────────────────────────────
 function processCode(code) {
-  if (orders.has(code)) {
+  const found = orders.has(code);
+  if (found) {
     orders.set(code, 'found');
-    showResult('✅', code, '在列表中 ✓', 'flash-found');
+    showPopup(true, code, '在列表中 ✓');
     addLog('✅', code, true);
     vibrate([80, 40, 80]);
     renderOrderList();
   } else {
     missLog.add(code);
-    showResult('❌', code, '不在列表中 ✗', 'flash-miss');
+    showPopup(false, code, '不在列表中 ✗');
     addLog('❌', code, false);
     vibrate([300]);
   }
   updateStats();
-
-  // 1.8 秒后自动恢复"等待扫描"状态，继续下一单
+  updateFsStats();
   if (resetTimer) clearTimeout(resetTimer);
-  resetTimer = setTimeout(() => {
-    if (scanActive) resetResult();
-  }, 1800);
+  resetTimer = setTimeout(hidePopup, 2000);
 }
 
-function checkManual() {
-  const inp  = document.getElementById('manual-in');
+function checkFsManual() {
+  const inp  = document.getElementById('fs-manual-in');
   const code = inp.value.trim();
   if (!code) return;
-  lastSeen.delete(code);  // 手动输入不受防抖限制
+  lastSeen.delete(code);
   processCode(code);
   inp.value = '';
   inp.focus();
 }
-
-document.getElementById('manual-in').addEventListener('keydown', e => {
-  if (e.key === 'Enter') checkManual();
+document.getElementById('fs-manual-in').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkFsManual();
 });
 
-// ─── UI Helpers ──────────────────────────────
-function showResult(icon, code, msg, cls) {
-  document.getElementById('r-icon').textContent = icon;
-  const el = document.getElementById('r-code');
-  el.textContent  = code;
-  el.style.color  = cls === 'flash-found' ? 'var(--green)' : 'var(--red)';
-  document.getElementById('r-msg').textContent = msg;
-  document.getElementById('result-flash').className = 'result-flash ' + cls;
+// ─── Popup ───────────────────────────────────
+function showPopup(found, code, msg) {
+  const popup = document.getElementById('scan-popup');
+  const inner = document.getElementById('popup-inner');
+  document.getElementById('popup-icon').textContent = found ? '✅' : '❌';
+  document.getElementById('popup-code').textContent = code;
+  document.getElementById('popup-msg').textContent  = msg;
+  inner.className = 'popup-inner ' + (found ? 'found' : 'miss');
+  popup.classList.add('show');
 }
-
-function resetResult() {
-  document.getElementById('r-icon').textContent = '⬜';
-  const el = document.getElementById('r-code');
-  el.textContent = '等待扫描...';
-  el.style.color = 'var(--muted)';
-  document.getElementById('r-msg').textContent = '将条形码/二维码对准扫描框';
-  document.getElementById('result-flash').className = 'result-flash';
+function hidePopup() {
+  document.getElementById('scan-popup').classList.remove('show');
+}
+function updateFsStats() {
+  let found = 0;
+  orders.forEach(v => { if (v === 'found') found++; });
+  document.getElementById('fs-found').textContent = '✓ ' + found;
+  document.getElementById('fs-miss').textContent  = '✗ ' + missLog.size;
 }
 
 function addLog(icon, code, found) {
