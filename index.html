@@ -48,10 +48,13 @@ textarea::placeholder{color:var(--muted)}
 .badge-found{background:rgba(30,142,62,.12);color:var(--green)}
 
 /* SCAN */
-.camera-wrap{position:relative;background:#000;overflow:hidden;flex-shrink:0;min-height:200px;max-height:220px}
-
+.camera-wrap{position:relative;background:#000;overflow:hidden;flex-shrink:0;height:220px}
 /* html5-qrcode 默认会渲染一个 div#reader，内含 video 和 canvas */
-#reader{width:100%;overflow:hidden;max-height:220px}
+#reader{width:100%;height:220px;overflow:hidden}
+#reader video{width:100%!important;height:220px!important;object-fit:cover!important;display:block!important;max-height:220px!important}
+#reader canvas{display:none!important}
+/* 扫描框叠加层也需要限高 */
+#reader__scan_region{height:220px!important;overflow:hidden!important}
 /* 隐藏 html5-qrcode 自带的多余UI */
 #reader__scan_region > img{display:none!important}
 #reader__dashboard_section_csr button{
@@ -284,13 +287,13 @@ async function startScan() {
   // 优先后置摄像头
   // 扫描框尺寸：取屏幕较小边的 85%，宽高比 16:9 适合同时涵盖二维码+条形码
   const vw = Math.min(window.innerWidth, 600);
-  const qrW = Math.round(vw * 0.65);
-  const qrH = Math.min(Math.round(qrW * 0.55), 160);  // 最高160px，确保不撑高摄像区
+  const qrW = Math.round(vw * 0.60);
+  const qrH = Math.min(Math.round(qrW * 0.50), 140);  // 最高140px，严格在220px容器内可见
 
   const config = {
     fps: 20,
     qrbox: { width: qrW, height: qrH },
-    aspectRatio: 4 / 3,
+    aspectRatio: 16 / 9,
     supportedScanTypes: [
       Html5QrcodeScanType.SCAN_TYPE_CAMERA
     ],
