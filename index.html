@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>包裹扫码核验 v1.1</title>
+<title>包裹扫码核验</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root {
@@ -48,10 +48,10 @@ textarea::placeholder{color:var(--muted)}
 .badge-found{background:rgba(30,142,62,.12);color:var(--green)}
 
 /* SCAN */
-.camera-wrap{position:relative;background:#000;overflow:hidden;flex-shrink:0;min-height:200px}
+.camera-wrap{position:relative;background:#000;overflow:hidden;flex-shrink:0;min-height:200px;max-height:220px}
 
 /* html5-qrcode 默认会渲染一个 div#reader，内含 video 和 canvas */
-#reader{width:100%;overflow:hidden}
+#reader{width:100%;overflow:hidden;max-height:220px}
 /* 隐藏 html5-qrcode 自带的多余UI */
 #reader__scan_region > img{display:none!important}
 #reader__dashboard_section_csr button{
@@ -125,7 +125,7 @@ textarea::placeholder{color:var(--muted)}
 <header>
   <div class="logo">📦</div>
   <div>
-    <div style="font-size:15px;font-weight:700">包裹扫码核验 v1.1</div>
+    <div style="font-size:15px;font-weight:700">包裹扫码核验 v1.2</div>
     <div style="font-size:11px;color:var(--muted)">PACKAGE SCANNER</div>
   </div>
 </header>
@@ -285,7 +285,7 @@ async function startScan() {
   // 扫描框尺寸：取屏幕较小边的 85%，宽高比 16:9 适合同时涵盖二维码+条形码
   const vw = Math.min(window.innerWidth, 600);
   const qrW = Math.round(vw * 0.65);
-  const qrH = Math.round(qrW * 0.55);   // 宽矩形兼顾条形码+二维码，但不占满屏
+  const qrH = Math.min(Math.round(qrW * 0.55), 160);  // 最高160px，确保不撑高摄像区
 
   const config = {
     fps: 20,
